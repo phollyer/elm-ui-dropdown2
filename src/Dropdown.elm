@@ -1,11 +1,12 @@
 module Dropdown exposing
     ( basic, filterable, multi, autocompleteHelper
-    , Config, State, Msg
+    , Config, State, Msg(..)
     , init, update, view
     , Effect(..), mapEffect, performEffect, updateWithoutPerform
     , onOutsideClick, withContainerAttributes, withEmptyListElement
     , withFilterPlaceholder, withListAttributes, withOpenCloseButtons
     , withPromptElement, withSearchAttributes, withSelectAttributes
+    , clearText, getText, open, close, allowClose
     )
 
 {-| Elm UI Dropdown.
@@ -56,6 +57,7 @@ type DropdownType
 type alias InternalState =
     { id : String
     , isOpen : Bool
+    , allowClose : Bool
     , filterText : String
     , focusedIndex : Int
     }
@@ -169,6 +171,7 @@ init id =
     State
         { id = id
         , isOpen = False
+        , allowClose = True
         , filterText = ""
         , focusedIndex = 0
         }
@@ -348,6 +351,29 @@ autocompleteHelper { itemsFromModel, selectionFromModel, dropdownMsg, onSelectMs
         }
 
 
+clearText : State item -> State item
+clearText (State state) =
+    State { state | filterText = "" }
+
+
+open : State item -> State item
+open (State state) =
+    State { state | isOpen = True }
+
+close : State item -> State item
+close (State state) =
+    State { state | isOpen = False }
+
+allowClose : Bool -> State item -> State item
+allowClose allow (State state) =
+    State { state | allowClose = allow }
+
+
+getText : State item -> String
+getText (State state) =
+    state.filterText
+
+
 {-| Sets the content of the Select, default is "-- Select --"
 
     Dropdown.withPromptElement (el [ Font.color (rgb255 123 123 123) ] <| text "Pick one") config
@@ -457,29 +483,31 @@ update config msg model state =
 -}
 updateWithoutPerform : Config item msg model -> Msg item -> model -> State item -> ( State item, List (Effect msg) )
 updateWithoutPerform (Config config) msg model ((State state) as untouchedState) =
-    case msg of
+    case msg  of
         OnDomFocus _ ->
             ( untouchedState, [] )
 
         OnBlur ->
-            ( State { state | isOpen = closeOnlyIfNotMultiSelect config state }, [] )
+            ( State 
+                { state 
+                | isOpen = 
+                    if state.allowClose then
+                        closeOnlyIfNotMultiSelect config state 
+                    else
+                        True
+                }
+            , [] 
+            )
 
         OnClickOutside ->
-            ( State { state | isOpen = False }, [] )
+            ( State { state | isOpen = not state.allowClose }, [] )
 
         OnClickPrompt ->
             let
-                isOpen =
-                    not state.isOpen
-
                 effect =
-                    if isOpen then
-                        [ DomFocus (OnDomFocus >> config.dropdownMsg) (state.id ++ "input-search") ]
-
-                    else
-                        []
+                    [ DomFocus (OnDomFocus >> config.dropdownMsg) (state.id ++ "input-search") ]
             in
-            ( State { state | isOpen = isOpen, focusedIndex = 0, filterText = "" }, effect )
+            ( State { state | isOpen = True, focusedIndex = 0, filterText = "" }, effect )
 
         OnSelect item ->
             let
@@ -791,10 +819,22 @@ triggerView config selectedItems state =
 
         ( promptOrSearch, button ) =
             if state.isOpen then
-                ( search, el [] config.closeButton )
+                ( search
+                , if config.closeButton == none then
+                    none
+
+                  else
+                    el [] config.closeButton
+                )
 
             else
-                ( prompt, el [] config.openButton )
+                ( prompt
+                , if config.openButton == none then
+                    none
+
+                  else
+                    el [] config.openButton
+                )
     in
     row selectAttrs [ promptOrSearch, button ]
 
