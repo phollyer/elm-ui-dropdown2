@@ -6,7 +6,7 @@ module Dropdown exposing
     , onOutsideClick, withContainerAttributes, withEmptyListElement
     , withFilterPlaceholder, withListAttributes, withOpenCloseButtons
     , withPromptElement, withSearchAttributes, withSelectAttributes
-    , clearText, getText, open, close, allowClose
+    , allowClose, clearText, close, getText, open
     )
 
 {-| Elm UI Dropdown.
@@ -360,9 +360,11 @@ open : State item -> State item
 open (State state) =
     State { state | isOpen = True }
 
+
 close : State item -> State item
 close (State state) =
     State { state | isOpen = False }
+
 
 allowClose : Bool -> State item -> State item
 allowClose allow (State state) =
@@ -483,20 +485,21 @@ update config msg model state =
 -}
 updateWithoutPerform : Config item msg model -> Msg item -> model -> State item -> ( State item, List (Effect msg) )
 updateWithoutPerform (Config config) msg model ((State state) as untouchedState) =
-    case msg  of
+    case msg of
         OnDomFocus _ ->
             ( untouchedState, [] )
 
         OnBlur ->
-            ( State 
-                { state 
-                | isOpen = 
-                    if state.allowClose then
-                        closeOnlyIfNotMultiSelect config state 
-                    else
-                        True
+            ( State
+                { state
+                    | isOpen =
+                        if state.allowClose then
+                            closeOnlyIfNotMultiSelect config state
+
+                        else
+                            True
                 }
-            , [] 
+            , []
             )
 
         OnClickOutside ->
