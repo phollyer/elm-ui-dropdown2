@@ -6,7 +6,7 @@ module Dropdown exposing
     , onOutsideClick, withContainerAttributes, withEmptyListElement
     , withFilterPlaceholder, withListAttributes, withOpenCloseButtons
     , withPromptElement, withSearchAttributes, withSelectAttributes
-    , allowClose, clearText, close, getText, open
+    , allowClose, clearText, close, closeAllowed, getText, open
     )
 
 {-| Elm UI Dropdown.
@@ -364,6 +364,11 @@ open (State state) =
 close : State item -> State item
 close (State state) =
     State { state | isOpen = False }
+
+
+closeAllowed : State item -> Bool
+closeAllowed (State state) =
+    state.allowClose
 
 
 allowClose : Bool -> State item -> State item
