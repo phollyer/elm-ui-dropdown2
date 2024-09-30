@@ -6,7 +6,7 @@ module Dropdown exposing
     , onOutsideClick, withContainerAttributes, withEmptyListElement
     , withFilterPlaceholder, withListAttributes, withOpenCloseButtons
     , withPromptElement, withSearchAttributes, withSelectAttributes
-    , allowClose, clearText, close, closeAllowed, getText, open
+    , Key(..), allowClose, clearText, close, closeAllowed, getFocusedId, getFocusedIndex, getListId, getText, open
     )
 
 {-| Elm UI Dropdown.
@@ -381,6 +381,21 @@ getText (State state) =
     state.filterText
 
 
+getFocusedId : State item -> String
+getFocusedId (State state) =
+    state.id ++ "-item-" ++ String.fromInt state.focusedIndex
+
+
+getFocusedIndex : State item -> Int
+getFocusedIndex (State state) =
+    state.focusedIndex
+
+
+getListId : State item -> String
+getListId (State state) =
+    state.id ++ "-list"
+
+
 {-| Sets the content of the Select, default is "-- Select --"
 
     Dropdown.withPromptElement (el [ Font.color (rgb255 123 123 123) ] <| text "Pick one") config
@@ -515,7 +530,7 @@ updateWithoutPerform (Config config) msg model ((State state) as untouchedState)
                 effect =
                     [ DomFocus (OnDomFocus >> config.dropdownMsg) (state.id ++ "input-search") ]
             in
-            ( State { state | isOpen = True, focusedIndex = 0, filterText = "" }, effect )
+            ( State { state | isOpen = True, focusedIndex = 0 }, effect )
 
         OnSelect item ->
             let
@@ -854,7 +869,9 @@ bodyView config selectedItems state data =
             items =
                 if List.length data >= 1 then
                     column
-                        config.listAttributes
+                        (idAttr (state.id ++ "-list")
+                            :: config.listAttributes
+                        )
                         (List.indexedMap (itemView config selectedItems state) data)
 
                 else
@@ -878,7 +895,8 @@ itemView : InternalConfig item msg model -> List item -> InternalState -> Int ->
 itemView config selectedItems state i item =
     let
         itemAttrsBase =
-            [ onClick <| config.dropdownMsg (OnSelect item)
+            [ idAttr (state.id ++ "-item-" ++ String.fromInt i)
+            , onClick <| config.dropdownMsg (OnSelect item)
             , referenceAttr state
             , tabIndexAttr -1
             , width fill
